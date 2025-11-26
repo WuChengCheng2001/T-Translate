@@ -1,22 +1,25 @@
 #t-translate-popup {
     position: fixed;
-    z-index: 2147483647; /* 确保不被任何网页元素遮挡 */
+    z-index: 2147483647; 
     background-color: rgba(28, 28, 30, 0.95);
     color: #ffffff;
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     backdrop-filter: blur(8px);
+    
     font-family: 'Segoe UI', system-ui, sans-serif;
     font-size: 14.5px;
     line-height: 1.6;
     padding: 12px 16px;
+    
     max-width: 420px;
-    max-height: 350px;
+    max-height: 400px;
     overflow-y: auto;
+    
     transition: opacity 0.15s ease-out;
     pointer-events: auto; 
-    cursor: grab; 
+    cursor: grab;
 }
 
 #t-translate-popup::-webkit-scrollbar { width: 5px; }

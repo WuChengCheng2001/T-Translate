@@ -1,92 +1,25 @@
 
-// --- 拖动功能全局变量 ---
+// --- 全局变量 ---
 let isDragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 let draggablePopup = null; 
-const PADDING = 20;
 
-// 拖动逻辑：鼠标移动时更新位置
-document.addEventListener('mousemove', (e) => {
-    if (!isDragging || !draggablePopup) return;
-    
-    draggablePopup.style.left = (e.clientX - dragOffsetX) + 'px';
-    draggablePopup.style.top = (e.clientY - dragOffsetY) + 'px';
-    e.preventDefault(); 
-});
+// 记录用户是否拖动过，以及拖动后的位置
+let hasMoved = false;
+let savedLeft = "";
+let savedTop = "";
 
-// 拖动逻辑：鼠标释放时停止
-document.addEventListener('mouseup', () => {
-    if (isDragging && draggablePopup) {
-        isDragging = false;
-        draggablePopup.style.cursor = 'grab';
-    }
-});
-// -----------------------
-
-
-// 监听 't' 键按下事件
-document.addEventListener('keydown', (e) => {
-    // 触发条件：按下 't' 键，且没有按 Ctrl 或 Meta 键 (防止输入法或系统快捷键冲突)
-    if ((e.key === 't' || e.key === 'T') && !e.ctrlKey && !e.metaKey) {
-        const selection = window.getSelection();
-        let rawText = selection.toString().trim();
-
-        if (!rawText) return;
-
-        e.preventDefault(); // 阻止浏览器默认行为（如果有的话）
-
-        // --- 翻译和定位逻辑 ---
-        
-        // 300词截断
-        const words = rawText.split(/\s+/);
-        if (words.length > 300) {
-            rawText = words.slice(0, 300).join(" ") + " ......";
-        }
-
-        // 公式过滤
-        let processedText = processTextForTranslation(rawText);
-        
-        // 默认位置是右下角，但如果弹窗已被拖动，则保留当前位置
-        const useCurrentPosition = document.getElementById('t-translate-popup') !== null;
-        
-        showPopup("Translating... / 翻译中...", useCurrentPosition, true);
-
-        chrome.runtime.sendMessage({ action: "translate", text: processedText }, (response) => {
-            if (response && response.status === "success") {
-                showPopup(response.translation, useCurrentPosition, false); 
-            } else {
-                showPopup("❌ " + (response ? response.message : "Error"), useCurrentPosition, false);
-            }
-        });
-    }
-});
-
-
-// 点击任意处关闭弹窗
-document.addEventListener('mousedown', (e) => {
-    const popup = document.getElementById('t-translate-popup');
-    if (!isDragging && popup && !popup.contains(e.target)) {
-        popup.remove();
-        draggablePopup = null;
-    }
-});
-
-function processTextForTranslation(text) {
-    let cleanText = text.replace(/\$.*?\$/g, "···");
-    cleanText = cleanText.replace(/[=<>+\-*/^]{2,}/g, "···");
-    return cleanText;
-}
-
-// 接收一个布尔值 useCurrentPosition 来决定是固定到右下角还是保持原位
-function showPopup(content, useCurrentPosition, isLoading) {
+// --- 核心显示逻辑 ---
+function showPopup(content, isLoading) {
     const oldPopup = document.getElementById('t-translate-popup');
     
-    // 如果存在旧弹窗且要求保持当前位置，则记录位置
-    let initialTop = oldPopup ? oldPopup.style.top : null;
-    let initialLeft = oldPopup ? oldPopup.style.left : null;
-    
-    if (oldPopup) oldPopup.remove();
+    // 如果存在旧弹窗，我们要继承它的位置状态
+    // 注意：如果用户还没拖动过 (hasMoved=false)，我们不继承 style.left/top
+    // 因为这可能导致从 Loading 到 结果显示 时，尺寸变化导致的遮挡
+    if (oldPopup) {
+        oldPopup.remove();
+    }
 
     const popup = document.createElement('div');
     popup.id = 't-translate-popup';
@@ -97,36 +30,135 @@ function showPopup(content, useCurrentPosition, isLoading) {
     popup.style.opacity = "0"; 
     document.body.appendChild(popup);
     
-    // --- 注册拖动监听器 ---
+    // --- 注册拖动事件 (MouseDown) ---
     popup.addEventListener('mousedown', (e) => {
         isDragging = true;
+        hasMoved = true; // 标记用户已经手动移动过
         draggablePopup = popup;
-        dragOffsetX = e.clientX - popup.offsetLeft;
-        dragOffsetY = e.clientY - popup.offsetTop;
+        
+        // 【关键修复】：开始拖动的一瞬间，获取当前真实的边界矩形
+        const rect = popup.getBoundingClientRect();
+        
+        // 将 CSS 锚点从 bottom/right 切换为绝对坐标 left/top
+        // 这样拖动时就不会因为尺寸变化乱跳
+        popup.style.bottom = "auto";
+        popup.style.right = "auto";
+        popup.style.left = rect.left + "px";
+        popup.style.top = rect.top + "px";
+
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+        
         popup.style.cursor = 'grabbing';
         e.preventDefault(); 
         e.stopPropagation();
     });
-    // -----------------------
-    
-    const popupRect = popup.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
 
-    // --- 定位逻辑 ---
-    if (useCurrentPosition && initialTop && initialLeft) {
-        // 如果已拖动过，则保持原位
-        popup.style.top = initialTop;
-        popup.style.left = initialLeft;
+    // --- 智能定位策略 ---
+    if (hasMoved && savedLeft && savedTop) {
+        // 策略 A: 用户之前拖动过，恢复到用户喜欢的位置
+        popup.style.left = savedLeft;
+        popup.style.top = savedTop;
+        popup.style.bottom = "auto";
+        popup.style.right = "auto";
     } else {
-        // 默认定位到右下角
-        let targetLeft = viewportWidth - popupRect.width - PADDING;
-        let targetTop = viewportHeight - popupRect.height - PADDING;
-
-        popup.style.left = targetLeft + 'px';
-        popup.style.top = targetTop + 'px';
+        // 策略 B (默认): 强制锚定到右下角
+        // 使用 CSS bottom/right 属性，而非计算 top/left
+        // 这样无论内容高度如何变化，盒子永远贴着底部生长，绝不被遮挡
+        popup.style.bottom = "20px";
+        popup.style.right = "20px";
+        popup.style.left = "auto";
+        popup.style.top = "auto";
     }
 
-    popup.style.opacity = "1"; 
+    // 显示动画
+    // 使用 requestAnimationFrame 确保 DOM 渲染后再显示，避免闪烁
+    requestAnimationFrame(() => {
+        popup.style.opacity = "1"; 
+    });
+    
     popup.style.cursor = 'grab';
 }
+
+// --- 辅助逻辑：文本处理 ---
+function processTextForTranslation(text) {
+    let cleanText = text.replace(/\$.*?\$/g, "···");
+    cleanText = cleanText.replace(/[=<>+\-*/^]{2,}/g, "···");
+    return cleanText;
+}
+
+// ==============================
+// 触发方式 1: 键盘 't' 键
+// ==============================
+document.addEventListener('keydown', (e) => {
+    if ((e.key === 't' || e.key === 'T') && !e.ctrlKey && !e.metaKey) {
+        const selection = window.getSelection();
+        let rawText = selection.toString().trim();
+
+        if (!rawText) return;
+
+        const words = rawText.split(/\s+/);
+        if (words.length > 300) rawText = words.slice(0, 300).join(" ") + " ...";
+        let processedText = processTextForTranslation(rawText);
+
+        showPopup("Translating... / 翻译中...", true);
+
+        chrome.runtime.sendMessage({ action: "translate_request", text: processedText }, (response) => {
+            if (response && response.status === "success") {
+                showPopup(response.translation, false);
+            } else {
+                showPopup("❌ " + (response ? response.message : "Error"), false);
+            }
+        });
+    }
+});
+
+// ==============================
+// 触发方式 2: 右键菜单消息
+// ==============================
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "displayLoading") {
+        showPopup("Translating... / 翻译中...", true);
+    }
+    if (request.action === "displayResult") {
+        showPopup(request.translation, false);
+    }
+});
+
+// ==============================
+// 拖动与交互
+// ==============================
+document.addEventListener('mousemove', (e) => {
+    if (!isDragging || !draggablePopup) return;
+    
+    let newLeft = (e.clientX - dragOffsetX);
+    let newTop = (e.clientY - dragOffsetY);
+    
+    draggablePopup.style.left = newLeft + 'px';
+    draggablePopup.style.top = newTop + 'px';
+    
+    // 实时保存位置
+    savedLeft = draggablePopup.style.left;
+    savedTop = draggablePopup.style.top;
+    
+    e.preventDefault(); 
+});
+
+document.addEventListener('mouseup', () => {
+    if (isDragging && draggablePopup) {
+        isDragging = false;
+        draggablePopup.style.cursor = 'grab';
+    }
+});
+
+document.addEventListener('mousedown', (e) => {
+    const popup = document.getElementById('t-translate-popup');
+    if (!isDragging && popup && !popup.contains(e.target)) {
+        popup.remove();
+        draggablePopup = null;
+        // 注意：这里我们不重置 hasMoved，
+        // 这样用户下次打开时，依然会在上次拖动到的位置。
+        // 如果您希望每次关闭后重置回右下角，可以把下面这行注释取消：
+        // hasMoved = false; 
+    }
+});
