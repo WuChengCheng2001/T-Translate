@@ -48,7 +48,8 @@ T-Translate is a lightweight browser extension that provides instant English-to-
 
 ## 备注
 
-**我负责写Prompt，具体代码工作由Gemini完成**
+* **我负责写Prompt，具体代码工作由Gemini完成**
 
 * **I am responsible for writing the prompts, while the actual coding work is handled by Gemini.**
+
 
