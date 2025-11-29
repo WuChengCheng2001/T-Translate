@@ -1,10 +1,8 @@
-# T-Translator v7.2 (Dual Trigger & Fix)
+# T-Translator v1.0 (Dual Trigger & Fix)
 
 **Instant Web Translator / 网页即时翻译插件 (修复遮挡版)**
 
 ## 功能介绍 (中文)
-
-此版本 (v7.2) 专门修复了之前版本中翻译框在右下角可能被屏幕底部遮挡的问题。
 
 ### ✨ 核心功能
 
@@ -26,7 +24,7 @@
 
 ## 🌐 Introduction (English)
 
-T-Translate is a lightweight browser extension that provides instant English-to-Chinese translation. It fixes previous positioning issues to ensure the translation box is never cut off by the screen edge.
+T-Translate is a lightweight browser extension that provides instant English-to-Chinese translation. 
 
 ### ✨ Key Features
 
@@ -51,5 +49,3 @@ T-Translate is a lightweight browser extension that provides instant English-to-
 * **我负责写Prompt，具体代码工作由Gemini完成**
 
 * **I am responsible for writing the prompts, while the actual coding work is handled by Gemini.**
-
-
