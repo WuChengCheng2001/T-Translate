@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "T-Translate (Dual Trigger & Fix)",
-  "version": "1.0",
-  "description": "Select text, press 't' OR use Right Click Menu. Default: Fixed Bottom-Right. Draggable.",
+  "name": "paper精读「快捷英译中」",
+  "version": "7.2",
+  "description": "选中文字 -> 按't'键/右键菜单选择“paper精读「快捷英译中」” -> 右下角出现翻译框（可拖动）",
   "permissions": ["activeTab", "scripting", "contextMenus"],
   "background": {
     "service_worker": "background.js"

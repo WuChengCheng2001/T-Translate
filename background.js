@@ -34,15 +34,15 @@ async function fetchTranslation(text) {
 // 1. 初始化右键菜单
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
-        id: "T-Translate-Menu",
-        title: "T-Translate Selected / 翻译选中文字",
+        id: "Translator-Menu",
+        title: "paper精读「快捷英译中」",
         contexts: ["selection"]
     });
 });
 
 // 2. 右键菜单触发
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-    if (info.menuItemId === "T-Translate-Menu" && info.selectionText) {
+    if (info.menuItemId === "Translator-Menu" && info.selectionText) {
         chrome.tabs.sendMessage(tab.id, { action: "displayLoading" });
         const cleanText = processText(info.selectionText);
         const result = await fetchTranslation(cleanText);

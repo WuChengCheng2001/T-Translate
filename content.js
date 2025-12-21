@@ -12,7 +12,7 @@ let savedTop = "";
 
 // --- 核心显示逻辑 ---
 function showPopup(content, isLoading) {
-    const oldPopup = document.getElementById('t-translate-popup');
+    const oldPopup = document.getElementById('translator-popup');
     
     // 如果存在旧弹窗，我们要继承它的位置状态
     // 注意：如果用户还没拖动过 (hasMoved=false)，我们不继承 style.left/top
@@ -22,7 +22,7 @@ function showPopup(content, isLoading) {
     }
 
     const popup = document.createElement('div');
-    popup.id = 't-translate-popup';
+    popup.id = 'translator-popup';
     popup.innerText = content;
     
     if (isLoading) popup.style.color = "#aaa";
@@ -152,13 +152,12 @@ document.addEventListener('mouseup', () => {
 });
 
 document.addEventListener('mousedown', (e) => {
-    const popup = document.getElementById('t-translate-popup');
+    const popup = document.getElementById('translator-popup');
     if (!isDragging && popup && !popup.contains(e.target)) {
         popup.remove();
         draggablePopup = null;
-        // 注意：这里我们不重置 hasMoved，
-        // 这样用户下次打开时，依然会在上次拖动到的位置。
-        // 如果您希望每次关闭后重置回右下角，可以把下面这行注释取消：
-        // hasMoved = false; 
+        // 注意：这里我们重置 hasMoved，
+        // 如果您希望每次用户重新打开时，依然会在上次拖动到的位置，可以把下面这行注释：
+        hasMoved = false; 
     }
 });

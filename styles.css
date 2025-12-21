@@ -1,4 +1,4 @@
-#t-translate-popup {
+#translator-popup {
     position: fixed;
     z-index: 2147483647; 
     background-color: rgba(28, 28, 30, 0.95);
@@ -22,5 +22,5 @@
     cursor: grab;
 }
 
-#t-translate-popup::-webkit-scrollbar { width: 5px; }
-#t-translate-popup::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+#translator-popup::-webkit-scrollbar { width: 5px; }
+#translator-popup::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
